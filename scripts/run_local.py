@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import socket
 import subprocess
 import sys
 import time
@@ -57,10 +58,19 @@ def wait_fastapi(url: str, process: subprocess.Popen[str]) -> None:
     raise TimeoutError("FastAPI не поднялся за 120 секунд")
 
 
+def find_free_port(preferred: int, host: str = "127.0.0.1", attempts: int = 50) -> int:
+    for port in range(preferred, preferred + attempts):
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+            sock.settimeout(0.2)
+            if sock.connect_ex((host, port)) != 0:
+                return port
+    raise OSError(f"Не найден свободный порт в диапазоне {preferred}-{preferred + attempts - 1}")
+
+
 def main() -> None:
     load_env()
     os.environ.setdefault("SPPR_LLM_BACKEND", "gigachat")
-    os.environ.setdefault("SPPR_LLM_MODEL_ID", "GigaChat")
+    os.environ.setdefault("SPPR_LLM_MODEL_ID", "GigaChat-2")
     os.environ.setdefault("SPPR_DATA_DIR", "D:/Notebooks/sppr")
     os.environ.setdefault("SPPR_DATABASE_URL", "sqlite:///D:/Notebooks/sppr/sppr_history.db")
     os.environ.setdefault("SPPR_HOST", "127.0.0.1")
@@ -77,7 +87,11 @@ def main() -> None:
     api_process = subprocess.Popen([sys.executable, "app_fastapi.py"], text=True)
     try:
         wait_fastapi(api_url, api_process)
-        print("Запускаю Gradio UI: http://127.0.0.1:7860", flush=True)
+        ui_host = os.environ.get("SPPR_UI_HOST", "127.0.0.1")
+        preferred_ui_port = int(os.environ.get("SPPR_UI_PORT", "7860"))
+        ui_port = find_free_port(preferred_ui_port, ui_host)
+        os.environ["SPPR_UI_PORT"] = str(ui_port)
+        print(f"Запускаю Gradio UI: http://{ui_host}:{ui_port}", flush=True)
         subprocess.run([sys.executable, "app_gradio.py"], check=True)
     finally:
         if api_process.poll() is None:
