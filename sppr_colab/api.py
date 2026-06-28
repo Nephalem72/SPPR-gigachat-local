@@ -80,13 +80,16 @@ def chat_context(request: ChatContextRequest) -> dict:
 
 @app.post("/chat")
 def chat(request: ChatRequest) -> dict:
-    return answer_chat(
-        request.text,
-        request.question,
-        history=[item.model_dump() for item in request.history],
-        use_rag=request.use_rag,
-        rag_profile=request.rag_profile,
-        legal_top_k=request.legal_top_k,
-        case_top_k=request.case_top_k,
-        return_context=request.return_context,
-    )
+    try:
+        return answer_chat(
+            request.text,
+            request.question,
+            history=[item.model_dump() for item in request.history],
+            use_rag=request.use_rag,
+            rag_profile=request.rag_profile,
+            legal_top_k=request.legal_top_k,
+            case_top_k=request.case_top_k,
+            return_context=request.return_context,
+        )
+    except RuntimeError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc

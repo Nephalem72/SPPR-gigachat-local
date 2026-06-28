@@ -9,6 +9,7 @@ from typing import Any, Protocol
 from uuid import uuid4
 
 import requests
+from requests import RequestException
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
 
@@ -189,19 +190,22 @@ class GigaChatBackend:
         with self._lock:
             if self._access_token and time() < self._expires_at - 60:
                 return self._access_token
-            response = requests.post(
-                settings.gigachat_oauth_url,
-                headers={
-                    "Content-Type": "application/x-www-form-urlencoded",
-                    "Accept": "application/json",
-                    "RqUID": str(uuid4()),
-                    "Authorization": f"Basic {settings.gigachat_auth_data}",
-                },
-                data={"scope": settings.gigachat_scope},
-                timeout=settings.gigachat_timeout,
-                verify=settings.gigachat_verify_ssl,
-            )
-            response.raise_for_status()
+            try:
+                response = requests.post(
+                    settings.gigachat_oauth_url,
+                    headers={
+                        "Content-Type": "application/x-www-form-urlencoded",
+                        "Accept": "application/json",
+                        "RqUID": str(uuid4()),
+                        "Authorization": f"Basic {settings.gigachat_auth_data}",
+                    },
+                    data={"scope": settings.gigachat_scope},
+                    timeout=settings.gigachat_timeout,
+                    verify=settings.gigachat_verify_ssl,
+                )
+                response.raise_for_status()
+            except RequestException as exc:
+                raise RuntimeError(f"Не удалось получить токен GigaChat: {exc}") from exc
             payload = response.json()
             self._access_token = payload["access_token"]
             raw_expires_at = float(payload.get("expires_at", 0))
@@ -213,25 +217,28 @@ class GigaChatBackend:
     def generate(self, messages: list[dict[str, str]]) -> tuple[str, dict[str, Any]]:
         token = self._get_access_token()
         started = perf_counter()
-        response = requests.post(
-            f"{settings.gigachat_api_url.rstrip('/')}/chat/completions",
-            headers={
-                "Authorization": f"Bearer {token}",
-                "Content-Type": "application/json",
-                "Accept": "application/json",
-            },
-            json={
-                "model": self.model_id,
-                "messages": messages,
-                "temperature": settings.llm_temperature,
-                "top_p": settings.llm_top_p,
-                "max_tokens": settings.llm_max_new_tokens,
-                "stream": False,
-            },
-            timeout=settings.gigachat_timeout,
-            verify=settings.gigachat_verify_ssl,
-        )
-        response.raise_for_status()
+        try:
+            response = requests.post(
+                f"{settings.gigachat_api_url.rstrip('/')}/chat/completions",
+                headers={
+                    "Authorization": f"Bearer {token}",
+                    "Content-Type": "application/json",
+                    "Accept": "application/json",
+                },
+                json={
+                    "model": self.model_id,
+                    "messages": messages,
+                    "temperature": settings.llm_temperature,
+                    "top_p": settings.llm_top_p,
+                    "max_tokens": settings.llm_max_new_tokens,
+                    "stream": False,
+                },
+                timeout=settings.gigachat_timeout,
+                verify=settings.gigachat_verify_ssl,
+            )
+            response.raise_for_status()
+        except RequestException as exc:
+            raise RuntimeError(f"Ошибка запроса к GigaChat: {exc}") from exc
         elapsed = perf_counter() - started
         payload = response.json()
         answer = payload["choices"][0]["message"]["content"].strip()

@@ -232,14 +232,17 @@ def send_message(
     rag_profile = request.rag_profile or conversation.rag_profile
     db.commit()
 
-    response = answer_chat(
-        case_text,
-        request.content,
-        history=history,
-        use_rag=request.use_rag,
-        rag_profile=rag_profile,
-        return_context=False,
-    )
+    try:
+        response = answer_chat(
+            case_text,
+            request.content,
+            history=history,
+            use_rag=request.use_rag,
+            rag_profile=rag_profile,
+            return_context=False,
+        )
+    except RuntimeError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
 
     conversation = db.scalar(
         select(Conversation).where(Conversation.id == conversation.id).with_for_update()
