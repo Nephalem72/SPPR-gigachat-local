@@ -61,13 +61,21 @@ python scripts\run_local.py
 
 - `SPPR_DATA_DIR` — папка с parquet/pkl/faiss, по умолчанию `D:/Notebooks/sppr`
 - `SPPR_LLM_BACKEND` — `gigachat` или `transformers`, по умолчанию `gigachat`
-- `SPPR_LLM_MODEL_ID` — модель GigaChat, по умолчанию `GigaChat`
+- `SPPR_LLM_MODEL_ID` — модель GigaChat, по умолчанию `GigaChat-2` как быстрый/Lite-вариант
 - `SPPR_GIGACHAT_AUTH_DATA` — обязательный ключ для GigaChat API
 - `SPPR_GIGACHAT_SCOPE` — scope OAuth, по умолчанию `GIGACHAT_API_PERS`
 - `SPPR_GIGACHAT_VERIFY_SSL` — проверка SSL, по умолчанию `true`
 - `SPPR_LLM_MAX_NEW_TOKENS` — лимит ответа, по умолчанию `768`
 - `SPPR_RAG_PROFILE` — `fast`, `balanced`, `broad`
 - `SPPR_DATABASE_URL` — БД истории, по умолчанию SQLite в `D:/Notebooks/sppr/sppr_history.db`
+
+Модель можно менять в `.env`:
+
+```text
+SPPR_LLM_MODEL_ID=GigaChat-2
+SPPR_LLM_MODEL_ID=GigaChat-2-Pro
+SPPR_LLM_MODEL_ID=GigaChat-2-Max
+```
 
 ## Проверка API
 

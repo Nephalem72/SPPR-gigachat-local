@@ -19,7 +19,7 @@ class Settings:
         "SPPR_LEGACY_CASE_ENCODER",
         "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
     )
-    llm_model_id: str = os.getenv("SPPR_LLM_MODEL_ID", "GigaChat")
+    llm_model_id: str = os.getenv("SPPR_LLM_MODEL_ID", "GigaChat-2")
     llm_backend: str = os.getenv("SPPR_LLM_BACKEND", "gigachat")
     llm_max_new_tokens: int = int(os.getenv("SPPR_LLM_MAX_NEW_TOKENS", "768"))
     llm_max_continuations: int = int(os.getenv("SPPR_LLM_MAX_CONTINUATIONS", "2"))
