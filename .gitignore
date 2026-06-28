@@ -1,0 +1,11 @@
+.venv/
+.env
+__pycache__/
+*.pyc
+.pytest_cache/
+.ipynb_checkpoints/
+notebooks/*.ipynb
+.gradio/
+models/
+tmp/
+eval/results/
